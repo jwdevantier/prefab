@@ -1,0 +1,22 @@
+{
+    "host_defaults": {
+        "keys": ["{home}/.ssh/id_scaleway"],
+        "user": "root",
+        "port": 22
+    },
+    "hosts": {
+        "vm1": {
+            "address": "51.15.210.243"
+        },
+        "vm2": {
+            "address": "51.15.210.243"
+        },
+        "vm3": {
+            "address": "51.15.210.243"
+        }
+    },
+    "groups": {
+        "swarm-managers": ["vm1"],
+        "swarm-workers": ["vm2", "vm3"]
+    }
+}
