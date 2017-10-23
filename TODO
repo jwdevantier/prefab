@@ -1,0 +1,7 @@
+
+* Better error-handling - very hard to figure out which part of a complex DS failed validation
+
+* Improve logging - simply log errors
+
+* parse - should inspect and see if I can't test this
+    (add one/two raw versions of the test data, parse & see)

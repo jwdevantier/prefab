@@ -2,7 +2,8 @@
 Core functionality for augmenting voluptuous schemas.
 """
 from voluptuous.error import MultipleInvalid, Invalid, DictInvalid, ValueInvalid
-from voluptuous import Schema
+from voluptuous import Schema, All, Length, ALLOW_EXTRA
+from voluptuous.humanize import humanize_error
 
 def seqof(validator):
     """Validate all elements in sequence against provided validator.
@@ -29,6 +30,26 @@ def seqof(validator):
             result = tuple(result)
         return result
     return __inner
+
+def non_empty(schema):
+    """Stipulate that schema must contain a non-empty value.
+
+    Note: uses Voluptuous.Length, will work with tuples, lists, strings and the like
+    """
+    return All(schema, Length(min=1))
+
+def mapping(dct, **kwargs):
+    """Map keys to values, yielding a schema with which to check dictionaries.
+
+    NOTE: use because the default strategy in voluptuous (error'ing)
+    """
+    if not isinstance(dct, dict):
+        raise ValueError("'dct': must be a dictionary")
+    if kwargs.pop('extra', False):
+        raise ValueError(
+            "you MUST not use the 'extra' keyword - these "
+            "policies lead to errors and ruin schema composition")
+    return Schema(dct, **kwargs, extra=ALLOW_EXTRA)
 
 def __schema_validate(validator, val):
     try:
@@ -98,3 +119,10 @@ def valid(schema, data):
         return True
     except Invalid:
         return False
+
+def explain(schema, data):
+    """Explain why schema validation fails iff it fails, pass-through otherwise."""
+    try:
+        schema(data)
+    except Invalid as exc:
+        print(humanize_error(data, exc))

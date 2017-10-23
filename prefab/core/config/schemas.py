@@ -1,60 +1,78 @@
 """
 Schema definitions collectively making up the config file
 """
+# pylint: disable-msg=C0103
 from os import path
-from voluptuous import Schema, Required, All, Any, Range
-from prefab import schema as S
+import voluptuous as v
+from prefab import schema as sc
 
+port = v.All(int, v.Range(min=1, max=65535))
+env = sc.dictof(str, v.Any(str, int, float, bool, None))
 
-# could define hosts
-# could define groups
-# could write ctx mgr to swap out host list
-# => easier to compose longer flows involving multiple hosts
-
-PORT = All(int, Range(min=1, max=65535))
-
-__HOST_DEFAULTS = {
-    'port': PORT,
-    'user': str,
-    'keys': S.seqof(S.pred(path.isfile)),
-    'sudo_password': str
-}
-
-HOST = Schema({
-    **__HOST_DEFAULTS,
-    **{
-        # hostname/ip of server
-        Required('address'): str,
-        # port number
-        'port': PORT,
-        'user': str
-    }
+# Fields common to a parsed host entry
+__host_common = sc.mapping({
+    v.Required('address'): str,
+    v.Required('port', default=22): port,
+    v.Required('user', default='root'): str,
+    'profile': str
 })
 
-CONFIG = Schema({
-    'host_defaults': Schema(__HOST_DEFAULTS),
-    'hosts': S.dictof(str, HOST),
-    'groups': S.dictof(str, S.seqof(str))
+# A parsed host entry
+host = v.All(
+    __host_common,
+    v.Any(
+        # SSH Key Login
+        sc.mapping({
+            v.Required('method'): 'key',
+            v.Required('keys'): sc.non_empty(sc.seqof(sc.pred(path.isfile)))
+        }),
+        # Password Login
+        sc.mapping({
+            v.Required('method'): 'password',
+            'password': str #if omitted, will be prompted @ runtime
+        })
+    )
+)
+
+# host entries as found in our json config
+json_host = v.Any(
+    host, # fully typed-out host
+    # ... or some entry referring a profile to merge with
+    sc.mapping({
+        v.Required('address'): str,
+        v.Required('profile'): str
+    })
+)
+
+profile = sc.mapping({
+    v.Required('connection'): sc.mapping({
+        v.Required('method'): v.Any('key', 'password'),
+        v.Required('user', default='root'): str,
+        v.Required('port', default=22): port
+    }),
+    'env': env
 })
 
-################################################
-# Parsed config - the structure after processing
-################################################
+role_entry = sc.mapping({
+    v.Required('hosts'): sc.non_empty(sc.seqof(str)),
+    'env': env
+})
 
-P_HOST = Schema(
-    All(
-        Schema({
-            Required('address'): str,
-            Required('port'): PORT}),
-        Any(
-            Schema({
-                Required('user'): str,
-                Required('password'): str}),
-            Schema({
-                Required('keys'): S.seqof(S.pred(path.isfile))
-            }))))
+json_roles = sc.dictof(str, v.Any(
+    #list of host labels
+    sc.non_empty(sc.seqof(str)),
+    # map containing host labels & a shared environment context
+    role_entry
+))
 
-P_CONFIG = Schema({
-    'hosts': P_HOST,
-    'groups': S.dictof(str, S.seqof(str))
+json_config = sc.mapping({
+    'profiles': sc.dictof(str, profile),
+    'hosts': sc.dictof(str, json_host),
+    'roles': json_roles
+})
+
+config = sc.mapping({
+    'profiles': sc.dictof(str, profile),
+    'hosts': sc.dictof(str, host),
+    'roles': sc.dictof(str, role_entry)
 })

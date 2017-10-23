@@ -12,7 +12,7 @@ setup(
     url="https://github.com/jwdevantier/prefab",
     packages=find_packages(exclude=['contrib', 'tests', 'docs']),
     install_requires = [
-        'click', 'Fabric3', 'voluptuous' 
+        'click', 'Fabric3', 'voluptuous', 'funcy'
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',

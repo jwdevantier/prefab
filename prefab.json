@@ -1,22 +1,58 @@
 {
-    "host_defaults": {
-        "keys": ["{home}/.ssh/id_scaleway"],
-        "user": "root",
-        "port": 22
+    "profiles": {
+        "default": {
+            "connection": {
+                "method": "key",
+                "user": "root",
+                "port": 24
+            },
+            "env": {
+                "foo": "bar"
+            }
+        },
+        "scaleway": {
+            "connection": {
+                "method": "key",
+                "keys": ["{home}/.ssh/id_scaleway"]
+            }
+        },
+        "gso": {
+            "connection": {
+                "method": "password",
+                "port": 22,
+                "user": "appadmin"
+            }
+        }
     },
     "hosts": {
         "vm1": {
-            "address": "51.15.210.243"
+            "address": "51.15.210.243",
+            "profile": "scaleway"
         },
         "vm2": {
-            "address": "51.15.210.243"
+            "address": "51.15.210.243",
+            "profile": "scaleway"
         },
         "vm3": {
-            "address": "51.15.210.243"
+            "address": "51.15.210.243",
+            "profile": "scaleway"
+        },
+        "anton": {
+            "address": "dprnw.net",
+            "user": "docker",
+            "profile": "scaleway"
         }
     },
-    "groups": {
+    "roles": {
         "swarm-managers": ["vm1"],
-        "swarm-workers": ["vm2", "vm3"]
+        "swarm-workers": {
+            "hosts": ["vm2", "vm3"],
+            "env": {
+                "manager": false
+            }
+        },
+        "cupcakes": {
+            "hosts": ["anton"]
+        }
     }
 }
